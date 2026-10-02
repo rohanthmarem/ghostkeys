@@ -1,3 +1,5 @@
+mod clock;
+pub use clock::SessionTiming;
 mod control;
 mod drafting;
 pub mod keyboard;
@@ -14,8 +16,8 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
-use std::time::Duration;
-use tauri::{AppHandle, Emitter, Manager};
+use std::time::{Duration, Instant};
+use tauri::{AppHandle, Emitter};
 
 pub fn normalize_content(content: &str) -> String {
     content.replace("\r\n", "\n").replace('\r', "\n")
@@ -35,6 +37,7 @@ pub struct TypingEngine {
     auto_pause: AtomicBool,
     target_app: Mutex<Option<i32>>,
     selection: Mutex<Option<(usize, usize)>>,
+    clock: Mutex<clock::SessionClock>,
 }
 
 impl Default for TypingEngine {
@@ -57,6 +60,7 @@ impl TypingEngine {
             auto_pause: AtomicBool::new(true),
             target_app: Mutex::new(None),
             selection: Mutex::new(None),
+            clock: Mutex::new(clock::SessionClock::default()),
         }
     }
 
@@ -65,10 +69,16 @@ impl TypingEngine {
     }
 
     pub fn set_status(&self, status: TypingStatus, app: &AppHandle) {
+        self.clock
+            .lock()
+            .set_running(status == TypingStatus::Typing, Instant::now());
         *self.status.lock() = status;
-        if status == TypingStatus::Countdown {
-            if let Some(widget) = app.get_webview_window("widget") {
-                let _ = widget.show();
+        if matches!(
+            status,
+            TypingStatus::Countdown | TypingStatus::Typing | TypingStatus::Paused
+        ) {
+            if let Err(error) = crate::show_progress_widget(app) {
+                eprintln!("Could not show progress window: {error}");
             }
         }
         let _ = app.emit(
@@ -79,6 +89,19 @@ impl TypingEngine {
 
     pub fn get_config(&self) -> Config {
         self.config.lock().clone()
+    }
+
+    pub fn session_timing(&self) -> SessionTiming {
+        let elapsed_ms = self.clock.lock().elapsed_ms(Instant::now());
+        let progress = self.get_progress();
+        SessionTiming {
+            elapsed_ms,
+            remaining_ms: clock::estimate_remaining_ms(
+                elapsed_ms,
+                progress.current,
+                progress.total,
+            ),
+        }
     }
     pub fn set_config(&self, config: Config) -> Result<(), String> {
         config.validate()?;
@@ -111,6 +134,7 @@ impl TypingEngine {
         *self.file_name.lock() = Some(file_name);
         *self.error_message.lock() = None;
         *self.current_index.lock() = 0;
+        *self.clock.lock() = clock::SessionClock::default();
         self.emit_progress(app);
         self.set_status(status, app);
         Ok(())
@@ -312,6 +336,7 @@ impl TypingEngine {
         let control = Arc::new(RunControl::new());
         *active = Some(control.clone());
         self.resuming.store(false, Ordering::SeqCst);
+        *self.clock.lock() = clock::SessionClock::default();
         *self.current_index.lock() = 0;
         *self.error_message.lock() = None;
         self.emit_progress(&app);

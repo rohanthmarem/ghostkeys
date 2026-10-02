@@ -1064,6 +1064,8 @@ version = "0.1.0"
 dependencies = [
  "core-foundation 0.9.4",
  "enigo",
+ "objc2 0.6.3",
+ "objc2-app-kit",
  "once_cell",
  "parking_lot",
  "rand 0.8.5",

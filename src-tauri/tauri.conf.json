@@ -30,8 +30,8 @@
         "title": "ghostkeys widget",
         "label": "widget",
         "url": "/widget.html",
-        "width": 270,
-        "height": 96,
+        "width": 340,
+        "height": 124,
         "resizable": false,
         "decorations": false,
         "transparent": true,
@@ -39,8 +39,11 @@
         "skipTaskbar": true,
         "visible": false,
         "x": 20,
-        "y": 20,
-        "focus": false
+        "y": 64,
+        "focus": false,
+        "focusable": false,
+        "acceptFirstMouse": true,
+        "visibleOnAllWorkspaces": true
       }
     ],
     "security": {

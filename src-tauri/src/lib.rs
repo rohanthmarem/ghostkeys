@@ -1,6 +1,7 @@
 pub mod config;
 pub mod platform;
 pub mod preferences;
+pub mod widget;
 pub mod typer;
 
 use once_cell::sync::Lazy;
@@ -10,6 +11,7 @@ use typer::TypingEngine;
 
 // Re-export types for use in main.rs
 pub use config::{Config, FileInfo, TypingStatus};
+pub use widget::show_progress_widget;
 
 /// Global typing engine instance
 static ENGINE: Lazy<Arc<TypingEngine>> = Lazy::new(|| Arc::new(TypingEngine::new()));
@@ -63,7 +65,7 @@ pub fn toggle_widget(app: &AppHandle) {
         if widget.is_visible().unwrap_or(false) {
             let _ = widget.hide();
         } else {
-            let _ = widget.show();
+            let _ = show_progress_widget(app);
         }
     }
 }

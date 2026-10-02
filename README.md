@@ -13,6 +13,8 @@ The Mac build is a native ARM64 `.app` bundle. It does not require Rosetta, Node
 
 During the countdown, Cancel or Escape stops the session. Start/Stop and Pause/Resume remain in the bottom bar; the mini window opens automatically when typing starts and is also available from the header.
 
+The floating window stays above the destination app, including other macOS Spaces and full-screen apps. It shows characters left, progress, elapsed typing time, and estimated time left. Thinking pauses and revisions count toward elapsed time; countdowns and paused time do not. The estimate appears after at least 10 characters and five active seconds, adjusts to observed pace, and freezes while paused. Use Pause/Resume or Stop directly in the floating window without focusing the main app, and drag its header to move it.
+
 Resume also gives you a countdown (at least three seconds) to refocus the destination. Closing the main window hides it; use the menu bar icon's **Show Window** or click the Dock icon to reopen it. Use **Quit** to exit completely.
 
 Keep the installed copy in the same location after granting permission. If you replace the app and macOS stops accepting keystrokes, remove its Accessibility entry, add the new app, and reopen it. In development, macOS may list the debug executable or the terminal running it separately from the installed app.

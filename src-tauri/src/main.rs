@@ -109,6 +109,11 @@ fn get_state() -> serde_json::Value {
 }
 
 #[tauri::command]
+fn get_session_timing() -> ghostkeys_lib::typer::SessionTiming {
+    engine().session_timing()
+}
+
+#[tauri::command]
 fn get_platform_info() -> platform::PlatformInfo {
     platform::info()
 }
@@ -124,10 +129,8 @@ fn open_accessibility_settings() -> Result<(), String> {
 }
 
 #[tauri::command]
-fn show_widget(app: AppHandle) {
-    if let Some(widget) = app.get_webview_window("widget") {
-        let _ = widget.show();
-    }
+fn show_widget(app: AppHandle) -> Result<(), String> {
+    ghostkeys_lib::show_progress_widget(&app).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -186,6 +189,7 @@ fn main() {
             request_accessibility,
             open_accessibility_settings,
             show_widget,
+            get_session_timing,
             show_main,
         ])
         .on_window_event(|window, event| {
@@ -230,12 +234,9 @@ fn main() {
             {
                 // The native Edit menu supplies Command-C/V/X/A and undo to WKWebView.
                 app.set_menu(Menu::default(app.handle())?)?;
-                if let Some(widget) = app.get_webview_window("widget") {
-                    widget.set_focusable(false)?;
-                    widget.set_visible_on_all_workspaces(true)?;
-                }
                 show_main_window(app.handle());
             }
+            ghostkeys_lib::widget::configure(app.handle())?;
 
             // Build tray menu
             let start_stop =

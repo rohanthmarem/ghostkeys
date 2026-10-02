@@ -129,18 +129,23 @@ input[type=range]::-moz-range-thumb { height: 10px; width: 10px; border-radius: 
 .countdown-caption { color: #6b6b6b; font-size: 15px; }
 .countdown-number { font-size: 150px; line-height: 1.1; font-weight: 300; letter-spacing: -8px; margin: 22px 0 40px; font-variant-numeric: tabular-nums; }
 .countdown-content kbd { font-size: 10px; letter-spacing: 0; margin-left: 9px; }
-.mini-window { width: 270px; height: 96px; background: #fff; border: 1px solid #d5d5d5; border-radius: 12px; overflow: hidden; }
-.mini-window header { display: flex; justify-content: space-between; align-items: center; padding: 0 10px 0 13px; height: 28px; border-bottom: 1px solid #eee; cursor: grab; }
-.mini-window header > span { font-size: 9px; color: #6b6b6b; }
-.mini-window header .icon-button { width: 20px; height: 20px; }
-.mini-content { display: flex; align-items: center; padding: 12px 10px 12px 13px; gap: 9px; }
-.mini-content .wordmark-icon { width: 24px; height: 24px; }
-.mini-status { min-width: 0; flex: 1; }
-.mini-status strong { display: block; font-size: 11px; font-weight: 500; }
-.mini-status span { display: block; font-size: 9px; color: #6b6b6b; margin-top: 4px; white-space: nowrap; }
-.mini-actions { display: flex; gap: 2px; }
-.mini-actions .icon-button { width: 25px; height: 27px; }
-.mini-progress { height: 2px; background: #eee; }
+.mini-window { width: 340px; height: 124px; position: relative; background: #fff; border: 1px solid #d5d5d5; border-radius: 12px; overflow: hidden; }
+.mini-window header { display: flex; align-items: center; gap: 9px; padding: 0 10px 0 14px; height: 31px; border-bottom: 1px solid #eee; cursor: grab; }
+.mini-window header > span { font-size: 10px; color: #6b6b6b; }
+.mini-window header .mini-label { margin-left: auto; color: #171717; }
+.mini-window header .icon-button { width: 22px; height: 22px; }
+.mini-content { display: flex; align-items: center; padding: 12px 10px 8px 14px; gap: 8px; min-height: 54px; }
+.mini-status { min-width: 0; flex: 1; font-variant-numeric: tabular-nums; }
+.mini-status strong { display: block; font-size: 15px; font-weight: 600; white-space: nowrap; }
+.mini-status strong span { font-size: 10px; color: #6b6b6b; font-weight: 400; }
+.mini-times { display: flex; justify-content: space-between; padding: 0 14px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.mini-times span { color: #6b6b6b; font-size: 10px; }
+.mini-actions { display: flex; align-items: center; gap: 3px; }
+.mini-actions .icon-button { width: 28px; height: 32px; }
+.mini-toggle { display: flex; align-items: center; gap: 5px; height: 32px; padding: 0 9px; background: #171717; color: #fff; border: 0; border-radius: 6px; font-size: 11px; cursor: pointer; }
+.mini-toggle:disabled { opacity: .4; cursor: default; }
+.mini-error { position: absolute; bottom: 7px; left: 14px; font-size: 9px; border: 0; padding: 0; background: #fff; color: #555; cursor: pointer; }
+.mini-progress { position: absolute; bottom: 0; width: 100%; height: 3px; background: #eee; }
 .mini-progress > div { height: 100%; background: #171717; transition: width .2s; }
 @keyframes breathe { 50% { opacity: .3; } }
 @media (max-width: 620px) {
