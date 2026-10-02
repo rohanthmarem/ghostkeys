@@ -1,0 +1,47 @@
+name: Build macOS app
+
+on:
+  push:
+    branches: [mac]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - run: npm ci
+
+      - name: Test typing engine
+        run: cargo test --manifest-path src-tauri/Cargo.toml --lib
+
+      - name: Build Apple Silicon app
+        run: npm run build:mac
+
+      - name: Archive app bundle
+        run: ditto -c -k --sequesterRsrc --keepParent src-tauri/target/aarch64-apple-darwin/release/bundle/macos/ghostkeys.app ghostkeys-macos-apple-silicon.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ghostkeys-macos-apple-silicon
+          path: ghostkeys-macos-apple-silicon.zip
+          if-no-files-found: error

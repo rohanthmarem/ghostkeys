@@ -1,4 +1,6 @@
 pub mod config;
+pub mod platform;
+pub mod preferences;
 pub mod typer;
 
 use once_cell::sync::Lazy;
@@ -22,20 +24,20 @@ pub fn engine() -> &'static Arc<TypingEngine> {
 // ============================================================================
 
 pub fn handle_tray_start_stop(app: &AppHandle) {
+    if engine().is_running() {
+        engine().stop();
+        return;
+    }
     let status = engine().get_status();
     match status {
         TypingStatus::Typing | TypingStatus::Countdown | TypingStatus::Paused => {
             engine().stop();
-            engine().set_status(TypingStatus::Ready, app);
         }
-        TypingStatus::Ready | TypingStatus::Done => {
-            let app = app.clone();
-            let engine = engine().clone();
-            tokio::spawn(async move {
-                if let Err(e) = engine.run(app.clone()).await {
-                    eprintln!("Typing error: {}", e);
-                }
-            });
+        TypingStatus::Ready | TypingStatus::Done | TypingStatus::Error => {
+            if let Err(error) = engine().start(app.clone()) {
+                engine().report_error(error, app);
+                show_main_window(app);
+            }
         }
         _ => {}
     }
@@ -45,12 +47,12 @@ pub fn handle_tray_pause_resume(app: &AppHandle) {
     let status = engine().get_status();
     match status {
         TypingStatus::Typing => {
-            engine().pause();
-            engine().set_status(TypingStatus::Paused, app);
+            engine().pause(app);
         }
         TypingStatus::Paused => {
-            engine().resume();
-            engine().set_status(TypingStatus::Typing, app);
+            if let Err(error) = engine().resume(app) {
+                engine().report_error(error, app);
+            }
         }
         _ => {}
     }
@@ -62,7 +64,6 @@ pub fn toggle_widget(app: &AppHandle) {
             let _ = widget.hide();
         } else {
             let _ = widget.show();
-            let _ = widget.set_focus();
         }
     }
 }

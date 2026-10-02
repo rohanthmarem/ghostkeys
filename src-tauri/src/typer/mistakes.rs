@@ -4,7 +4,7 @@ use std::collections::HashMap;
 /// QWERTY keyboard neighbor map for adjacent key mistakes
 pub static NEIGHBORS: Lazy<HashMap<char, Vec<char>>> = Lazy::new(|| {
     let mut map = HashMap::new();
-    
+
     // Top row
     map.insert('q', vec!['w', 'a']);
     map.insert('w', vec!['q', 'e', 'a', 's']);
@@ -16,7 +16,7 @@ pub static NEIGHBORS: Lazy<HashMap<char, Vec<char>>> = Lazy::new(|| {
     map.insert('i', vec!['u', 'o', 'j', 'k']);
     map.insert('o', vec!['i', 'p', 'k', 'l']);
     map.insert('p', vec!['o', 'l', '[']);
-    
+
     // Middle row
     map.insert('a', vec!['q', 'w', 's', 'z']);
     map.insert('s', vec!['a', 'w', 'e', 'd', 'z', 'x']);
@@ -27,7 +27,7 @@ pub static NEIGHBORS: Lazy<HashMap<char, Vec<char>>> = Lazy::new(|| {
     map.insert('j', vec!['h', 'u', 'i', 'k', 'n', 'm']);
     map.insert('k', vec!['j', 'i', 'o', 'l', 'm', ',']);
     map.insert('l', vec!['k', 'o', 'p', ';', ',', '.']);
-    
+
     // Bottom row
     map.insert('z', vec!['a', 's', 'x']);
     map.insert('x', vec!['z', 's', 'd', 'c']);
@@ -36,7 +36,7 @@ pub static NEIGHBORS: Lazy<HashMap<char, Vec<char>>> = Lazy::new(|| {
     map.insert('b', vec!['v', 'g', 'h', 'n']);
     map.insert('n', vec!['b', 'h', 'j', 'm']);
     map.insert('m', vec!['n', 'j', 'k', ',']);
-    
+
     // Numbers
     map.insert('1', vec!['2', 'q']);
     map.insert('2', vec!['1', '3', 'q', 'w']);
@@ -48,7 +48,7 @@ pub static NEIGHBORS: Lazy<HashMap<char, Vec<char>>> = Lazy::new(|| {
     map.insert('8', vec!['7', '9', 'u', 'i']);
     map.insert('9', vec!['8', '0', 'i', 'o']);
     map.insert('0', vec!['9', '-', 'o', 'p']);
-    
+
     map
 });
 
@@ -73,7 +73,7 @@ impl MistakeType {
         use rand::Rng;
         let mut rng = rand::thread_rng();
         let roll: f64 = rng.gen();
-        
+
         // Weights: adjacent 40%, transposition 20%, omission 15%, double-tap 15%, caps 10%
         if roll < 0.40 {
             MistakeType::AdjacentKey
@@ -110,9 +110,10 @@ pub fn generate_mistake(
 ) -> MistakeResult {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    
+
     // Check if we should make a mistake
-    if rng.gen::<f64>() >= mistake_rate {
+    // Keep composed Unicode intact: backspace removes graphemes, not scalar values.
+    if !current_char.is_ascii() || current_char.is_control() || rng.gen::<f64>() >= mistake_rate {
         return MistakeResult {
             chars_to_type: vec![current_char],
             mistake_made: false,
@@ -120,9 +121,9 @@ pub fn generate_mistake(
             mistake_type: None,
         };
     }
-    
+
     let mistake_type = MistakeType::random();
-    
+
     match mistake_type {
         MistakeType::AdjacentKey => {
             if let Some(wrong_char) = get_adjacent_key(current_char) {
@@ -142,9 +143,9 @@ pub fn generate_mistake(
                 }
             }
         }
-        
+
         MistakeType::Transposition => {
-            if let Some(next) = next_char {
+            if let Some(next) = next_char.filter(|c| c.is_ascii() && !c.is_control()) {
                 // Swap current and next
                 MistakeResult {
                     chars_to_type: vec![next, current_char],
@@ -161,7 +162,7 @@ pub fn generate_mistake(
                 }
             }
         }
-        
+
         MistakeType::Omission => {
             // Skip this character entirely
             MistakeResult {
@@ -171,7 +172,7 @@ pub fn generate_mistake(
                 mistake_type: Some(MistakeType::Omission),
             }
         }
-        
+
         MistakeType::DoubleTap => {
             // Type character twice
             MistakeResult {
@@ -181,7 +182,7 @@ pub fn generate_mistake(
                 mistake_type: Some(MistakeType::DoubleTap),
             }
         }
-        
+
         MistakeType::Capitalization => {
             let wrong_char = if current_char.is_uppercase() {
                 current_char.to_lowercase().next().unwrap_or(current_char)
@@ -190,7 +191,7 @@ pub fn generate_mistake(
             } else {
                 current_char
             };
-            
+
             if wrong_char != current_char {
                 MistakeResult {
                     chars_to_type: vec![wrong_char],
@@ -213,16 +214,33 @@ pub fn generate_mistake(
 /// Get a random adjacent key for the given character
 fn get_adjacent_key(c: char) -> Option<char> {
     use rand::seq::SliceRandom;
-    
+
     let lower = c.to_lowercase().next()?;
     let neighbors = NEIGHBORS.get(&lower)?;
     let mut rng = rand::thread_rng();
     let neighbor = neighbors.choose(&mut rng)?;
-    
+
     // Preserve case
     if c.is_uppercase() {
         Some(neighbor.to_uppercase().next().unwrap_or(*neighbor))
     } else {
         Some(*neighbor)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn unicode_is_never_split_or_transposed_for_mistakes() {
+        for _ in 0..100 {
+            for c in ['é', '👻', '\u{0301}', '\u{200d}'] {
+                let result = generate_mistake(c, Some('a'), 1.0);
+                assert_eq!(result.chars_to_type, vec![c]);
+                assert!(!result.mistake_made);
+                let result = generate_mistake('a', Some(c), 1.0);
+                assert_eq!(result.chars_consumed, 1);
+            }
+        }
     }
 }

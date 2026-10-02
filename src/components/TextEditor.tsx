@@ -19,6 +19,7 @@ export function TextEditor({
   // Sync local content when external content changes (file load)
   useEffect(() => {
     setLocalContent(content || "");
+    setIsEditing(false);
   }, [content]);
 
   const handleChange = useCallback(
@@ -42,7 +43,7 @@ export function TextEditor({
 
   // Memoize text statistics calculation
   const { charCount, wordCount, estimatedMinutes } = useMemo(() => {
-    const chars = localContent.length;
+    const chars = Array.from(localContent).length;
     const words = localContent
       .trim()
       .split(/\s+/)

@@ -58,6 +58,21 @@ export interface FileInfo {
   charCount: number;
 }
 
+export interface BackendTypingState {
+  status: TypingStatus;
+  current_char: number;
+  total_chars: number;
+  file_name: string | null;
+  content: string | null;
+  error_message: string | null;
+}
+
+export interface PlatformInfo {
+  platform: "macos" | "windows" | "linux";
+  accessibilityGranted: boolean;
+  shortcutLabel: string;
+}
+
 // Widget position
 export interface WidgetPosition {
   x: number;

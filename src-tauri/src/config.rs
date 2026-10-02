@@ -73,8 +73,66 @@ pub struct ErrorPayload {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FileInfo {
     pub name: String,
     pub content: String,
     pub char_count: u32,
+}
+
+impl Config {
+    pub fn validate(&self) -> Result<(), String> {
+        if !(20..=200).contains(&self.base_wpm) {
+            return Err("Typing speed must be between 20 and 200 WPM.".into());
+        }
+        if !(3..=15).contains(&self.countdown_seconds) {
+            return Err("Countdown must be between 3 and 15 seconds.".into());
+        }
+        for (value, max, name) in [
+            (self.wpm_variance, 0.5, "Speed variation"),
+            (self.mistake_rate, 0.15, "Added typos"),
+            (self.correction_rate, 1.0, "Typos corrected"),
+            (self.thinking_pause_chance, 0.1, "Thinking pauses"),
+        ] {
+            if !value.is_finite() || !(0.0..=max).contains(&value) {
+                return Err(format!("{name} is outside the allowed range."));
+            }
+        }
+        if self.punctuation_pause > 1000
+            || self.paragraph_pause > 3000
+            || !(500..=5000).contains(&self.thinking_pause_duration)
+        {
+            return Err("Pause duration is outside the allowed range.".into());
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn default_config_is_valid() {
+        assert!(Config::default().validate().is_ok());
+    }
+    #[test]
+    fn invalid_speed_and_countdown_are_rejected() {
+        let mut config = Config::default();
+        config.base_wpm = 0;
+        assert!(config.validate().is_err());
+        config.base_wpm = 60;
+        config.countdown_seconds = 0;
+        assert!(config.validate().is_err());
+    }
+    #[test]
+    fn invalid_probabilities_and_durations_are_rejected() {
+        for invalid in [f64::NAN, f64::INFINITY, -0.1, 1.1] {
+            let mut config = Config::default();
+            config.correction_rate = invalid;
+            assert!(config.validate().is_err());
+        }
+        let mut config = Config::default();
+        config.paragraph_pause = u64::MAX;
+        assert!(config.validate().is_err());
+    }
 }

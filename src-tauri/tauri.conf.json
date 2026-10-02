@@ -5,20 +5,21 @@
   "identifier": "com.ghostkeys.app",
   "build": {
     "beforeBuildCommand": "npm run build",
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "npm run dev:web",
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420"
   },
   "app": {
+    "macOSPrivateApi": true,
     "withGlobalTauri": true,
     "windows": [
       {
         "title": "ghostkeys",
         "label": "main",
-        "width": 400,
-        "height": 700,
-        "minWidth": 350,
-        "minHeight": 500,
+        "width": 800,
+        "height": 720,
+        "minWidth": 520,
+        "minHeight": 520,
         "resizable": true,
         "center": true,
         "decorations": true,
@@ -29,16 +30,17 @@
         "title": "ghostkeys widget",
         "label": "widget",
         "url": "/widget.html",
-        "width": 200,
-        "height": 60,
+        "width": 270,
+        "height": 96,
         "resizable": false,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,
         "skipTaskbar": true,
-        "visible": true,
+        "visible": false,
         "x": 20,
-        "y": 20
+        "y": 20,
+        "focus": false
       }
     ],
     "security": {

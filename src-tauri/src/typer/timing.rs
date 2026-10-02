@@ -10,7 +10,7 @@ pub fn base_delay_ms(wpm: u32) -> u64 {
     // chars per minute = WPM * 5
     // chars per second = WPM * 5 / 60
     // ms per char = 60000 / (WPM * 5) = 12000 / WPM
-    (12000 / wpm as u64).max(20) // Minimum 20ms
+    (12000 / wpm.max(1) as u64).max(20) // Minimum 20ms
 }
 
 /// Add gaussian variance to a delay
@@ -40,15 +40,36 @@ pub fn add_variance(delay_ms: u64, variance: f64) -> u64 {
 
 /// Check if character is a word boundary
 fn is_word_boundary(c: char) -> bool {
-    c.is_whitespace() || matches!(c, '.' | ',' | ';' | ':' | '!' | '?' | '"' | '\'' | '(' | ')' | '[' | ']' | '{' | '}' | '-' | '/' | '\\')
+    c.is_whitespace()
+        || matches!(
+            c,
+            '.' | ','
+                | ';'
+                | ':'
+                | '!'
+                | '?'
+                | '"'
+                | '\''
+                | '('
+                | ')'
+                | '['
+                | ']'
+                | '{'
+                | '}'
+                | '-'
+                | '/'
+                | '\\'
+        )
 }
 
 /// Get which hand types a character (simplified QWERTY layout)
 /// Returns 0 for left hand, 1 for right hand, 2 for either/special
 fn get_hand(c: char) -> u8 {
     match c.to_ascii_lowercase() {
-        'q' | 'w' | 'e' | 'r' | 't' | 'a' | 's' | 'd' | 'f' | 'g' | 'z' | 'x' | 'c' | 'v' | 'b' | '1' | '2' | '3' | '4' | '5' | '`' | '~' => 0,
-        'y' | 'u' | 'i' | 'o' | 'p' | 'h' | 'j' | 'k' | 'l' | 'n' | 'm' | '6' | '7' | '8' | '9' | '0' | '-' | '=' | '[' | ']' | '\\' | ';' | '\'' | ',' | '.' | '/' => 1,
+        'q' | 'w' | 'e' | 'r' | 't' | 'a' | 's' | 'd' | 'f' | 'g' | 'z' | 'x' | 'c' | 'v' | 'b'
+        | '1' | '2' | '3' | '4' | '5' | '`' | '~' => 0,
+        'y' | 'u' | 'i' | 'o' | 'p' | 'h' | 'j' | 'k' | 'l' | 'n' | 'm' | '6' | '7' | '8' | '9'
+        | '0' | '-' | '=' | '[' | ']' | '\\' | ';' | '\'' | ',' | '.' | '/' => 1,
         _ => 2,
     }
 }
@@ -56,7 +77,8 @@ fn get_hand(c: char) -> u8 {
 /// Check if two characters form a common digraph (typed faster due to muscle memory)
 fn is_common_digraph(prev: char, curr: char) -> bool {
     let pair = format!("{}{}", prev.to_ascii_lowercase(), curr.to_ascii_lowercase());
-    matches!(pair.as_str(),
+    matches!(
+        pair.as_str(),
         // Common English digraphs
         "th" | "he" | "in" | "er" | "an" | "re" | "on" | "at" | "en" | "nd" |
         "ti" | "es" | "or" | "te" | "of" | "ed" | "is" | "it" | "al" | "ar" |
@@ -85,7 +107,11 @@ pub struct WordContext {
 impl WordContext {
     pub fn analyze(chars: &[char], current_index: usize) -> Self {
         let current_char = chars.get(current_index).copied().unwrap_or(' ');
-        let prev_char = if current_index > 0 { chars.get(current_index - 1).copied() } else { None };
+        let prev_char = if current_index > 0 {
+            chars.get(current_index - 1).copied()
+        } else {
+            None
+        };
         let next_char = chars.get(current_index + 1).copied();
 
         // Count chars since last word boundary
@@ -107,8 +133,10 @@ impl WordContext {
             j += 1;
         }
 
-        let is_word_start = prev_char.map(is_word_boundary).unwrap_or(true) && !is_word_boundary(current_char);
-        let is_word_end = next_char.map(is_word_boundary).unwrap_or(true) && !is_word_boundary(current_char);
+        let is_word_start =
+            prev_char.map(is_word_boundary).unwrap_or(true) && !is_word_boundary(current_char);
+        let is_word_end =
+            next_char.map(is_word_boundary).unwrap_or(true) && !is_word_boundary(current_char);
 
         Self {
             chars_in_word,
@@ -130,7 +158,11 @@ pub fn calculate_delay_v2(
     let base = base_delay_ms(config.base_wpm);
 
     let current_char = chars[current_index];
-    let prev_char = if current_index > 0 { Some(chars[current_index - 1]) } else { None };
+    let prev_char = if current_index > 0 {
+        Some(chars[current_index - 1])
+    } else {
+        None
+    };
 
     let word_ctx = WordContext::analyze(chars, current_index);
 
@@ -147,7 +179,8 @@ pub fn calculate_delay_v2(
     // Mid-word momentum - type faster as you flow through a word
     if word_ctx.chars_in_word > 0 && word_ctx.chars_in_word < word_ctx.word_length_estimate {
         // Build momentum: faster in the middle of words
-        let word_progress = word_ctx.chars_in_word as f64 / word_ctx.word_length_estimate.max(1) as f64;
+        let word_progress =
+            word_ctx.chars_in_word as f64 / word_ctx.word_length_estimate.max(1) as f64;
         // Peak speed at ~40% through the word
         let momentum = if word_progress < 0.4 {
             0.85 + 0.15 * (1.0 - word_progress / 0.4) // Getting faster
@@ -228,7 +261,8 @@ pub fn calculate_delay_v2(
     // Warmup - slower at the very start
     let warmup_chars = 30;
     if current_index < warmup_chars {
-        let warmup_factor = 1.0 + 0.35 * (1.0 - (current_index as f64 / warmup_chars as f64)).powi(2);
+        let warmup_factor =
+            1.0 + 0.35 * (1.0 - (current_index as f64 / warmup_chars as f64)).powi(2);
         delay *= warmup_factor;
     }
 

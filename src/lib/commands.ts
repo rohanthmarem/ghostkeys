@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Config, FileInfo } from "./types";
+import type { BackendTypingState, Config, FileInfo, PlatformInfo } from "./types";
 
 export async function loadFile(path: string): Promise<FileInfo> {
   return invoke<FileInfo>("load_file", { path });
@@ -29,12 +29,7 @@ export async function setConfig(config: Config): Promise<void> {
   return invoke("set_config", { config });
 }
 
-export async function getState(): Promise<{
-  status: string;
-  current_char: number;
-  total_chars: number;
-  file_name: string | null;
-}> {
+export async function getState(): Promise<BackendTypingState> {
   return invoke("get_state");
 }
 
@@ -43,4 +38,16 @@ export async function setFileContent(
   fileName: string
 ): Promise<void> {
   return invoke("set_file_content", { content, fileName });
+}
+
+export async function getPlatformInfo(): Promise<PlatformInfo> {
+  return invoke("get_platform_info");
+}
+
+export async function requestAccessibility(): Promise<boolean> {
+  return invoke("request_accessibility");
+}
+
+export async function openAccessibilitySettings(): Promise<void> {
+  return invoke("open_accessibility_settings");
 }

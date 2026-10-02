@@ -38,11 +38,11 @@ export function TypingControls({
       ) : (
         <button
           onClick={onStart}
-          disabled={!hasFile || status === "done"}
+          disabled={!hasFile}
           className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all
                      flex items-center justify-center gap-2
                      ${
-                       hasFile && status !== "done"
+                       hasFile
                          ? "bg-accent-primary hover:bg-accent-primary/80 text-white"
                          : "bg-ghost-800 text-ghost-500 cursor-not-allowed"
                      }`}

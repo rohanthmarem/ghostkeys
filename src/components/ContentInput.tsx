@@ -1,5 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
+import { isTauri } from "@tauri-apps/api/core";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
+import * as commands from "../lib/commands";
 
 interface ContentInputProps {
   onContentLoad: (content: string, fileName: string | null) => void;
@@ -17,6 +20,7 @@ export function ContentInput({
   const [mode, setMode] = useState<InputMode>("file");
   const [pasteText, setPasteText] = useState("");
   const [fileError, setFileError] = useState<string | null>(null);
+  const [isNativeDragActive, setNativeDragActive] = useState(false);
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -37,7 +41,7 @@ export function ContentInput({
     [onContentLoad]
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, rootRef, isDragActive: isBrowserDragActive } = useDropzone({
     onDrop,
     accept: {
       "text/markdown": [".md"],
@@ -45,7 +49,53 @@ export function ContentInput({
     },
     multiple: false,
     disabled,
+    onDropRejected: () => setFileError("Select a single .txt or .md file."),
   });
+
+  // Tauri receives native Finder drops before the WebView's HTML drop handler.
+  useEffect(() => {
+    if (!isTauri() || disabled || mode !== "file") return;
+    let active = true;
+    const unlisten = getCurrentWebview().onDragDropEvent(async ({ payload }) => {
+      if (!active) return;
+      if (payload.type === "leave") {
+        setNativeDragActive(false);
+        return;
+      }
+
+      const bounds = rootRef.current?.getBoundingClientRect();
+      const x = payload.position.x / window.devicePixelRatio;
+      const y = payload.position.y / window.devicePixelRatio;
+      const inside = !!bounds && x >= bounds.left && x <= bounds.right &&
+        y >= bounds.top && y <= bounds.bottom;
+      setNativeDragActive(inside && payload.type !== "drop");
+      if (payload.type !== "drop" || !inside) return;
+
+      if (payload.paths.length !== 1 || !/\.(txt|md)$/i.test(payload.paths[0])) {
+        setFileError("Select a single .txt or .md file.");
+        return;
+      }
+
+      try {
+        setFileError(null);
+        const file = await commands.loadFile(payload.paths[0]);
+        if (active) onContentLoad(file.content, file.name);
+      } catch (error) {
+        if (active) setFileError(String(error));
+      }
+    }).catch((error) => {
+      if (active) setFileError(`File drop is unavailable: ${String(error)}`);
+      return () => {};
+    });
+
+    return () => {
+      active = false;
+      setNativeDragActive(false);
+      void unlisten.then((stop) => stop());
+    };
+  }, [disabled, mode, onContentLoad, rootRef]);
+
+  const isDragActive = isBrowserDragActive || isNativeDragActive;
 
   const handlePasteSubmit = useCallback(() => {
     if (pasteText.trim()) {
@@ -193,7 +243,7 @@ export function ContentInput({
             <p className="text-xs text-ghost-500">
               {pasteText.length > 0 ? (
                 <span className="font-mono">
-                  {pasteText.length.toLocaleString()} characters
+                  {Array.from(pasteText).length.toLocaleString()} characters
                 </span>
               ) : (
                 "Paste from clipboard or type directly"

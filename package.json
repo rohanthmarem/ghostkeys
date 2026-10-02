@@ -8,6 +8,8 @@
     "dev:web": "vite",
     "build": "tsc && vite build",
     "build:tauri": "tauri build",
+    "build:mac": "tauri build --target aarch64-apple-darwin --bundles app",
+    "icons:mac": "node scripts/generate-macos-icons.js",
     "preview": "vite preview",
     "tauri": "tauri"
   },

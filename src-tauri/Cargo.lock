@@ -1062,6 +1062,7 @@ dependencies = [
 name = "ghostkeys"
 version = "0.1.0"
 dependencies = [
+ "core-foundation 0.9.4",
  "enigo",
  "once_cell",
  "parking_lot",
