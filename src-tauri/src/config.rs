@@ -1,5 +1,14 @@
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DraftingMode {
+    #[default]
+    Off,
+    Slow,
+    Fast,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
@@ -13,6 +22,8 @@ pub struct Config {
     pub thinking_pause_duration: u64,
     pub burst_typing: bool,
     pub countdown_seconds: u32,
+    #[serde(default)]
+    pub drafting_mode: DraftingMode,
 }
 
 impl Default for Config {
@@ -28,6 +39,7 @@ impl Default for Config {
             thinking_pause_duration: 1500,
             burst_typing: true,
             countdown_seconds: 3,
+            drafting_mode: DraftingMode::Off,
         }
     }
 }
@@ -114,6 +126,23 @@ mod tests {
     #[test]
     fn default_config_is_valid() {
         assert!(Config::default().validate().is_ok());
+    }
+    #[test]
+    fn legacy_settings_keep_their_rhythm_and_drafting_roundtrips() {
+        let mut saved = serde_json::to_value(Config::default()).unwrap();
+        saved.as_object_mut().unwrap().remove("draftingMode");
+        let legacy: Config = serde_json::from_value(saved).unwrap();
+        assert_eq!(legacy.drafting_mode, DraftingMode::Off);
+        for mode in [DraftingMode::Slow, DraftingMode::Fast] {
+            let config = Config {
+                drafting_mode: mode,
+                ..legacy.clone()
+            };
+            let loaded: Config =
+                serde_json::from_str(&serde_json::to_string(&config).unwrap()).unwrap();
+            assert_eq!(loaded.drafting_mode, mode);
+            assert!(loaded.validate().is_ok());
+        }
     }
     #[test]
     fn invalid_speed_and_countdown_are_rejected() {

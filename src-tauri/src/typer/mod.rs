@@ -1,9 +1,10 @@
 mod control;
+mod drafting;
 pub mod keyboard;
 pub mod mistakes;
 pub mod timing;
 
-use crate::config::{Config, TypingProgress, TypingStatus};
+use crate::config::{Config, DraftingMode, TypingProgress, TypingStatus};
 use control::RunControl;
 use keyboard::{KeyboardOutput, KeyboardSimulator};
 use mistakes::generate_mistake;
@@ -391,16 +392,66 @@ fn type_sequence(
     keyboard: &mut impl KeyboardOutput,
     chars: &[char],
     config: &Config,
+    wait: impl FnMut(Duration) -> bool,
+    progress: impl FnMut(usize),
+) -> Result<(), String> {
+    type_sequence_with_rng(
+        keyboard,
+        chars,
+        config,
+        wait,
+        progress,
+        &mut rand::thread_rng(),
+    )
+}
+
+fn type_sequence_with_rng(
+    keyboard: &mut impl KeyboardOutput,
+    chars: &[char],
+    config: &Config,
     mut wait: impl FnMut(Duration) -> bool,
     mut progress: impl FnMut(usize),
+    rng: &mut impl Rng,
 ) -> Result<(), String> {
-    let mut rng = rand::thread_rng();
+    let drafting = config.drafting_mode != DraftingMode::Off;
+    let mut rhythm = drafting::DraftingRhythm::new(config.drafting_mode);
     let mut i = 0;
     while i < chars.len() {
         if !wait(Duration::ZERO) {
             return Ok(());
         }
-        let delay = timing::calculate_delay_v2(config, chars, i, chars.len());
+        let delay = if drafting {
+            let step = rhythm.step(chars, i, config, rng);
+            if !wait(Duration::from_millis(step.pause_ms)) {
+                return Ok(());
+            }
+            for c in step.tentative.chars() {
+                if !wait(Duration::ZERO) {
+                    return Ok(());
+                }
+                keyboard.type_char(c)?;
+                if !wait(Duration::from_millis(step.key_delay_ms)) {
+                    return Ok(());
+                }
+            }
+            if !step.tentative.is_empty() {
+                if !wait(Duration::from_millis(step.review_ms)) {
+                    return Ok(());
+                }
+                for _ in step.tentative.chars() {
+                    if !wait(Duration::ZERO) {
+                        return Ok(());
+                    }
+                    keyboard.backspace()?;
+                    if !wait(Duration::from_millis(timing::backspace_delay(config))) {
+                        return Ok(());
+                    }
+                }
+            }
+            step.key_delay_ms
+        } else {
+            timing::calculate_delay_v2(config, chars, i, chars.len())
+        };
         let mistake = generate_mistake(chars[i], chars.get(i + 1).copied(), config.mistake_rate);
         for c in &mistake.chars_to_type {
             if !wait(Duration::ZERO) {
@@ -411,7 +462,7 @@ fn type_sequence(
                 return Ok(());
             }
         }
-        if mistake.mistake_made && rng.gen::<f64>() < config.correction_rate {
+        if mistake.mistake_made && (drafting || rng.gen::<f64>() < config.correction_rate) {
             if !wait(Duration::from_millis(timing::notice_mistake_delay())) {
                 return Ok(());
             }
@@ -443,6 +494,150 @@ fn type_sequence(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::{rngs::StdRng, SeedableRng};
+    use std::{cell::Cell, rc::Rc};
+
+    #[derive(Default)]
+    struct DraftBuffer {
+        text: String,
+        deletions: usize,
+        events: Rc<Cell<usize>>,
+    }
+    impl KeyboardOutput for DraftBuffer {
+        fn type_char(&mut self, c: char) -> Result<(), String> {
+            self.text.push(c);
+            self.events.set(self.events.get() + 1);
+            Ok(())
+        }
+        fn backspace(&mut self) -> Result<(), String> {
+            self.text.pop();
+            self.deletions += 1;
+            self.events.set(self.events.get() + 1);
+            Ok(())
+        }
+    }
+
+    const DRAFT: &str = "Writing a thoughtful draft usually requires several attempts because important ideas deserve attention. However perhaps another approach would work better.\n\nA second paragraph includes café, cafe\u{301}, 👩‍💻 and 日本語.\n\tPreserve every character exactly.";
+
+    #[test]
+    fn drafting_revisions_preserve_final_text_and_progress() {
+        let chars: Vec<_> = DRAFT.chars().collect();
+        for mode in [DraftingMode::Slow, DraftingMode::Fast] {
+            let config = Config {
+                drafting_mode: mode,
+                mistake_rate: 0.15,
+                correction_rate: 0.0,
+                ..Config::default()
+            };
+            let mut deletions = 0;
+            for seed in 0..32 {
+                let mut output = DraftBuffer::default();
+                let mut previous = 0;
+                type_sequence_with_rng(
+                    &mut output,
+                    &chars,
+                    &config,
+                    |_| true,
+                    |i| {
+                        assert!(i > previous && i <= chars.len());
+                        previous = i;
+                    },
+                    &mut StdRng::seed_from_u64(seed),
+                )
+                .unwrap();
+                assert_eq!(output.text, DRAFT);
+                assert_eq!(previous, chars.len());
+                deletions += output.deletions;
+            }
+            assert!(deletions > 0);
+        }
+    }
+
+    #[test]
+    fn slow_drafting_spends_more_time_planning_and_both_modes_revise() {
+        let chars: Vec<_> = DRAFT.chars().collect();
+        let mut totals = Vec::new();
+        for mode in [DraftingMode::Slow, DraftingMode::Fast] {
+            let mut elapsed = Duration::ZERO;
+            let mut deletions = 0;
+            for seed in 0..32 {
+                let config = Config {
+                    drafting_mode: mode,
+                    base_wpm: if mode == DraftingMode::Slow { 42 } else { 85 },
+                    mistake_rate: 0.0,
+                    ..Config::default()
+                };
+                let mut output = DraftBuffer::default();
+                type_sequence_with_rng(
+                    &mut output,
+                    &chars,
+                    &config,
+                    |duration| {
+                        elapsed += duration;
+                        true
+                    },
+                    |_| {},
+                    &mut StdRng::seed_from_u64(seed),
+                )
+                .unwrap();
+                assert_eq!(output.text, DRAFT);
+                deletions += output.deletions;
+            }
+            assert!(deletions > 0, "drafting must revise even without typos");
+            totals.push(elapsed);
+        }
+        assert!(totals[0] > totals[1] * 2);
+    }
+
+    #[test]
+    fn cancellation_stops_every_stage_of_a_drafting_revision() {
+        let chars: Vec<_> = DRAFT.chars().collect();
+        let config = Config {
+            drafting_mode: DraftingMode::Slow,
+            mistake_rate: 0.0,
+            ..Config::default()
+        };
+        let mut complete = DraftBuffer::default();
+        type_sequence_with_rng(
+            &mut complete,
+            &chars,
+            &config,
+            |_| true,
+            |_| {},
+            &mut StdRng::seed_from_u64(7),
+        )
+        .unwrap();
+        assert!(complete.deletions > 0);
+        for stop_after in 0..complete.events.get() {
+            let mut output = DraftBuffer::default();
+            let events = output.events.clone();
+            type_sequence_with_rng(
+                &mut output,
+                &chars,
+                &config,
+                |_| events.get() < stop_after,
+                |_| {},
+                &mut StdRng::seed_from_u64(7),
+            )
+            .unwrap();
+            assert_eq!(events.get(), stop_after, "no keys may escape cancellation");
+        }
+        let mut output = DraftBuffer::default();
+        type_sequence_with_rng(
+            &mut output,
+            &chars,
+            &config,
+            |duration| duration.is_zero(),
+            |_| {},
+            &mut StdRng::seed_from_u64(7),
+        )
+        .unwrap();
+        assert_eq!(
+            output.events.get(),
+            0,
+            "stop during initial planning emits nothing"
+        );
+    }
     #[derive(Default)]
     struct Buffer(String);
     impl KeyboardOutput for Buffer {

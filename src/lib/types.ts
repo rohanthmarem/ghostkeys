@@ -36,6 +36,7 @@ export interface Config {
   thinkingPauseDuration: number;
   burstTyping: boolean;
   countdownSeconds: number;
+  draftingMode: "off" | "slow" | "fast";
 }
 
 export const DEFAULT_CONFIG: Config = {
@@ -49,6 +50,7 @@ export const DEFAULT_CONFIG: Config = {
   thinkingPauseDuration: 1500,
   burstTyping: true,
   countdownSeconds: 3,
+  draftingMode: "off",
 };
 
 // File info returned from backend

@@ -64,6 +64,9 @@ See Apple's [Accessibility permission instructions](https://support.apple.com/gu
 
 ## Settings
 
+- **Natural Slow** (42 WPM while typing) and **Natural Fast** (85 WPM) simulate drafting: several words flow together, then planning or rereading pauses; sentence and paragraph breaks take longer. Slow uses shorter bursts and more reflection. Overall output speed is lower than the WPM setting because pauses and revisions take time.
+- Both drafting styles occasionally restart a partial word or replace a tentative word, then continue with your exact supplied text. All simulated typos are corrected, even if a saved custom correction rate is lower. This is a local rhythm simulation with a small set of tentative word alternatives, not an AI generating or understanding earlier drafts. Unicode text is preserved; revisions only erase newly typed ASCII. Destination-app autocorrect or formatting can still alter keystrokes.
+- **Drafting rhythm** in Typing settings selects Slow, Fast, or Off independently of speed. In drafting modes, phrase-aware pauses replace the manual pause sliders. Existing settings and saved presets retain their previous behavior until a new rhythm is selected. Stopping during a revision leaves the partial draft in the destination; Stop never sends cleanup keystrokes.
 - **Pause when switching apps** remembers the destination app at the end of the countdown. Switching apps pauses output. Return to that app and resume; the countdown gives you time to focus the text field again. This detects app changes, not a different field or window inside the same app.
 - **Remember draft** restores your text after quitting. Turning it off removes the saved draft. Clear also clears the saved text.
 - The **My presets** tab saves the current typing settings under a name; choose a saved preset to apply it or Delete to remove it.
