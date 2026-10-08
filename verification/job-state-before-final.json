@@ -1,0 +1,53 @@
+{
+  "jobId": "roblox-20261001",
+  "tabId": "23B4F1FEE4CB55A8980138279EB46230",
+  "documentId": "223BB36B-84F8-4FC9-A857-F2CFC8FF67AE",
+  "documentUrl": "https://uofwaterloo-my.sharepoint.com/:w:/r/personal/rmarem_uwaterloo_ca/_layouts/15/Doc.aspx?sourcedoc=%7B223BB36B-84F8-4FC9-A857-F2CFC8FF67AE%7D&action=edit",
+  "phase": "ready_for_formatting",
+  "completed": 6,
+  "pageBreaks": 5,
+  "history": [
+    {
+      "paragraph": 1,
+      "startedAt": "2026-10-01T05:35:43.875Z",
+      "completedAt": "2026-10-01T05:41:21.341Z",
+      "characters": 540
+    },
+    {
+      "paragraph": 2,
+      "startedAt": "2026-10-01T06:11:21.859Z",
+      "completedAt": "2026-10-01T06:18:09.086Z",
+      "characters": 711
+    },
+    {
+      "paragraph": 3,
+      "startedAt": "2026-10-01T06:48:09.555Z",
+      "completedAt": "2026-10-01T06:56:12.972Z",
+      "characters": 731
+    },
+    {
+      "paragraph": 4,
+      "startedAt": "2026-10-01T07:26:13.460Z",
+      "completedAt": "2026-10-01T07:44:37.878Z",
+      "characters": 1726
+    },
+    {
+      "paragraph": 5,
+      "startedAt": "2026-10-01T08:14:38.384Z",
+      "completedAt": "2026-10-01T08:21:52.197Z",
+      "characters": 587
+    },
+    {
+      "paragraph": 6,
+      "startedAt": "2026-10-01T08:51:52.638Z",
+      "completedAt": "2026-10-01T08:59:19.670Z",
+      "characters": 681
+    }
+  ],
+  "createdAt": "2026-10-01T05:34:31.599497+00:00",
+  "currentParagraph": 6,
+  "updatedAt": "2026-10-01T08:59:19.824Z",
+  "paragraphStartedAt": "2026-10-01T08:51:52.638Z",
+  "lastCompletedAt": "2026-10-01T08:59:19.670Z",
+  "nextStartAt": null
+}

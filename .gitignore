@@ -28,3 +28,4 @@ npm-debug.log*
 src-tauri/WixTools/
 src-tauri/target/
 .claude/
+.private/
