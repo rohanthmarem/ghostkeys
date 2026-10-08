@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod remote;
+
 use ghostkeys_lib::{
     engine, handle_tray_pause_resume, handle_tray_start_stop, show_main_window, toggle_widget,
     Config, FileInfo, TypingStatus,
@@ -27,12 +29,20 @@ fn set_config(config: Config) {
 }
 
 #[tauri::command]
-fn set_file_content(content: String, file_name: String) {
+fn set_file_content(app: AppHandle, content: String, file_name: String) -> Result<(), String> {
+    if engine().is_running() || matches!(engine().get_status(), TypingStatus::Typing | TypingStatus::Countdown | TypingStatus::Paused) {
+        return Err("Stop typing before replacing the text".into());
+    }
     engine().set_content(content, file_name);
+    engine().set_status(TypingStatus::Ready, &app);
+    Ok(())
 }
 
 #[tauri::command]
 fn load_file(path: String) -> Result<FileInfo, String> {
+    if engine().is_running() || matches!(engine().get_status(), TypingStatus::Typing | TypingStatus::Countdown | TypingStatus::Paused) {
+        return Err("Stop typing before replacing the text".into());
+    }
     let content = std::fs::read_to_string(&path)
         .map_err(|e| format!("Failed to read file: {}", e))?;
 
@@ -42,7 +52,7 @@ fn load_file(path: String) -> Result<FileInfo, String> {
         .unwrap_or("unknown")
         .to_string();
 
-    let char_count = content.len() as u32;
+    let char_count = content.chars().count() as u32;
 
     engine().set_content(content.clone(), name.clone());
 
@@ -55,15 +65,22 @@ fn load_file(path: String) -> Result<FileInfo, String> {
 
 #[tauri::command]
 async fn start_typing(app: AppHandle) -> Result<(), String> {
+    ghostkeys_lib::platform::ensure_keyboard_access()?;
     let status = engine().get_status();
+    if engine().is_running() && !matches!(status, TypingStatus::Paused) {
+        return Err("Wait for the current typing session to stop".into());
+    }
 
     match status {
         TypingStatus::Ready
         | TypingStatus::Done
-        | TypingStatus::Idle => {
+        | TypingStatus::Idle
+        | TypingStatus::Error => {
             // Start typing
             let eng = engine().clone();
-            tokio::spawn(async move {
+            if eng.get_progress().total == 0 { return Err("Load text first".into()); }
+            eng.set_status(TypingStatus::Countdown, &app);
+            tauri::async_runtime::spawn(async move {
                 if let Err(e) = eng.run(app.clone()).await {
                     eprintln!("Typing error: {}", e);
                     let _ = app.emit("typing-error", serde_json::json!({ "message": e }));
@@ -80,9 +97,6 @@ async fn start_typing(app: AppHandle) -> Result<(), String> {
             engine().resume();
             engine().set_status(TypingStatus::Typing, &app);
             Ok(())
-        }
-        TypingStatus::Error => {
-            Err("Cannot start while in error state".to_string())
         }
     }
 }
@@ -153,8 +167,14 @@ fn main() {
             set_config,
             get_state,
             set_file_content,
+            ghostkeys_lib::platform::get_platform_status,
+            ghostkeys_lib::platform::open_accessibility_settings,
+            ghostkeys_lib::background::get_background_target,
+            ghostkeys_lib::background::capture_background_target,
+            ghostkeys_lib::background::clear_background_target,
         ])
         .setup(move |app| {
+            remote::start(app.handle().clone())?;
             // Store app handle for global shortcut handler
             *app_handle_for_shortcut.lock().unwrap() = Some(app.handle().clone());
 

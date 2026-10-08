@@ -1,13 +1,14 @@
 {
   "name": "ghostkeys",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "tauri dev",
     "dev:web": "vite",
     "build": "tsc && vite build",
     "build:tauri": "tauri build",
+    "build:mac": "node scripts/generate-icons.mjs && tauri build --bundles app,dmg",
     "preview": "vite preview",
     "tauri": "tauri"
   },

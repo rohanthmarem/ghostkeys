@@ -19,6 +19,9 @@ export function useTypingState() {
 
   // Listen for backend events
   useEffect(() => {
+    const unlistenContent = listen<{ content: string; fileName: string }>("content-loaded", (event) => {
+      setState((prev) => ({ ...prev, status: "ready", content: event.payload.content, fileName: event.payload.fileName, totalChars: Array.from(event.payload.content).length, currentChar: 0, percent: 0, errorMessage: null }));
+    });
     const unlistenProgress = listen<TypingProgress>(
       "typing-progress",
       (event) => {
@@ -57,6 +60,7 @@ export function useTypingState() {
     );
 
     return () => {
+      unlistenContent.then((fn) => fn());
       unlistenProgress.then((fn) => fn());
       unlistenState.then((fn) => fn());
       unlistenError.then((fn) => fn());
@@ -72,7 +76,7 @@ export function useTypingState() {
         status: "ready",
         fileName: fileName || "Pasted Text",
         content,
-        totalChars: content.length,
+        totalChars: Array.from(content).length,
         currentChar: 0,
         percent: 0,
         errorMessage: null,
@@ -93,7 +97,7 @@ export function useTypingState() {
       setState((prev) => ({
         ...prev,
         content,
-        totalChars: content.length,
+        totalChars: Array.from(content).length,
         currentChar: 0,
         percent: 0,
       }));

@@ -1,4 +1,6 @@
 pub mod config;
+pub mod background;
+pub mod platform;
 pub mod typer;
 
 use once_cell::sync::Lazy;
@@ -29,9 +31,16 @@ pub fn handle_tray_start_stop(app: &AppHandle) {
             engine().set_status(TypingStatus::Ready, app);
         }
         TypingStatus::Ready | TypingStatus::Done => {
+            if engine().is_running() || engine().get_progress().total == 0 { return; }
+            if let Err(message) = crate::platform::ensure_keyboard_access() {
+                use tauri::Emitter;
+                let _ = app.emit("typing-error", serde_json::json!({ "message": message }));
+                return;
+            }
+            engine().set_status(TypingStatus::Countdown, app);
             let app = app.clone();
             let engine = engine().clone();
-            tokio::spawn(async move {
+            tauri::async_runtime::spawn(async move {
                 if let Err(e) = engine.run(app.clone()).await {
                     eprintln!("Typing error: {}", e);
                 }

@@ -42,7 +42,7 @@ export function TextEditor({
 
   // Memoize text statistics calculation
   const { charCount, wordCount, estimatedMinutes } = useMemo(() => {
-    const chars = localContent.length;
+    const chars = Array.from(localContent).length;
     const words = localContent
       .trim()
       .split(/\s+/)

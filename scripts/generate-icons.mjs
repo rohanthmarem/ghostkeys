@@ -70,14 +70,20 @@ async function generateIcons() {
   writeFileSync(join(ICONS_DIR, 'icon.ico'), icoBuffer);
   console.log('Created icon.ico');
   
-  // For macOS, we'd need icns format - create a placeholder
-  // In production, use iconutil on macOS to create proper .icns
-  // For now, just copy the PNG as a placeholder
-  await sharp(svg256)
-    .resize(512, 512)
-    .png()
-    .toFile(join(ICONS_DIR, 'icon.icns.png'));
-  console.log('Created icon.icns.png (placeholder - convert to .icns on macOS)');
+  // ICNS stores PNG images in typed, length-prefixed chunks.
+  const chunks = [];
+  for (const [type, size] of [['icp4', 16], ['icp5', 32], ['icp6', 64], ['ic07', 128], ['ic08', 256], ['ic09', 512], ['ic10', 1024]]) {
+    const png = await sharp(Buffer.from(createGhostSvg(size))).png().toBuffer();
+    const header = Buffer.alloc(8);
+    header.write(type, 0, 4, 'ascii');
+    header.writeUInt32BE(png.length + 8, 4);
+    chunks.push(header, png);
+  }
+  const header = Buffer.alloc(8);
+  header.write('icns', 0, 4, 'ascii');
+  header.writeUInt32BE(8 + chunks.reduce((total, chunk) => total + chunk.length, 0), 4);
+  writeFileSync(join(ICONS_DIR, 'icon.icns'), Buffer.concat([header, ...chunks]));
+  console.log('Created icon.icns');
   
   console.log('Done!');
 }
@@ -106,4 +112,4 @@ function createIcoFromPng(pngBuffer, width, height) {
   return Buffer.concat([header, dirEntry, pngBuffer]);
 }
 
-generateIcons().catch(console.error);
+generateIcons().catch((error) => { console.error(error); process.exitCode = 1; });

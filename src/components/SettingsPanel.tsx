@@ -59,6 +59,7 @@ function Slider({
       </div>
       <input
         type="range"
+        aria-label={label}
         min={min}
         max={max}
         step={step}
@@ -89,6 +90,8 @@ function Toggle({ label, tooltip, checked, onChange, disabled }: ToggleProps) {
         <Tooltip text={tooltip} />
       </div>
       <button
+        aria-label={label}
+        aria-pressed={checked}
         onClick={() => onChange(!checked)}
         disabled={disabled}
         className={`relative w-11 h-6 rounded-full transition-colors

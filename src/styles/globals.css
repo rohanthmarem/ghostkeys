@@ -67,7 +67,7 @@ input[type="range"] {
   cursor: pointer;
 }
 
-input[type="range"]::-webkit-slider-track {
+input[type="range"]::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 3px;
   background: #2e2e33;

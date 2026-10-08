@@ -193,7 +193,7 @@ export function ContentInput({
             <p className="text-xs text-ghost-500">
               {pasteText.length > 0 ? (
                 <span className="font-mono">
-                  {pasteText.length.toLocaleString()} characters
+                  {Array.from(pasteText).length.toLocaleString()} characters
                 </span>
               ) : (
                 "Paste from clipboard or type directly"

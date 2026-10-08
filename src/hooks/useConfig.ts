@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import type { Config } from "../lib/types";
 import { DEFAULT_CONFIG } from "../lib/types";
 import * as commands from "../lib/commands";
+import { listen } from "@tauri-apps/api/event";
 
 export function useConfig() {
   const [config, setConfigState] = useState<Config>(DEFAULT_CONFIG);
@@ -9,6 +10,7 @@ export function useConfig() {
 
   // Load config on mount
   useEffect(() => {
+    const unlisten = listen<Config>("config-changed", (event) => setConfigState(event.payload));
     commands
       .getConfig()
       .then((cfg) => {
@@ -19,6 +21,7 @@ export function useConfig() {
         console.error("Failed to load config:", err);
         setLoading(false);
       });
+    return () => { unlisten.then((fn) => fn()); };
   }, []);
 
   const updateConfig = useCallback(async (updates: Partial<Config>) => {

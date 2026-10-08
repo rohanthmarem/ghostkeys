@@ -30,6 +30,7 @@ pub struct TypingEngine {
     stop_signal: AtomicBool,
     /// Pause signal
     pause_signal: AtomicBool,
+    running: AtomicBool,
     /// Pause watcher sender
     pause_tx: Mutex<Option<watch::Sender<bool>>>,
 }
@@ -50,12 +51,17 @@ impl TypingEngine {
             current_index: Mutex::new(0),
             stop_signal: AtomicBool::new(false),
             pause_signal: AtomicBool::new(false),
+            running: AtomicBool::new(false),
             pause_tx: Mutex::new(None),
         }
     }
 
     pub fn get_status(&self) -> TypingStatus {
         *self.status.lock()
+    }
+
+    pub fn is_running(&self) -> bool {
+        self.running.load(Ordering::SeqCst)
     }
 
     pub fn set_status(&self, status: TypingStatus, app: &AppHandle) {
@@ -83,7 +89,7 @@ impl TypingEngine {
 
     pub fn get_progress(&self) -> TypingProgress {
         let content = self.content.lock();
-        let total = content.as_ref().map(|c| c.len()).unwrap_or(0) as u32;
+        let total = content.as_ref().map(|c| c.chars().count()).unwrap_or(0) as u32;
         let current = *self.current_index.lock() as u32;
         let percent = if total > 0 {
             (current as f32 / total as f32) * 100.0
@@ -129,6 +135,14 @@ impl TypingEngine {
 
     /// Run the typing simulation
     pub async fn run(self: Arc<Self>, app: AppHandle) -> Result<(), String> {
+        if self.running.compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst).is_err() {
+            return Err("Wait for the current typing session to stop".into());
+        }
+        struct RunningSession(Arc<TypingEngine>);
+        impl Drop for RunningSession {
+            fn drop(&mut self) { self.0.running.store(false, Ordering::SeqCst); }
+        }
+        let _session = RunningSession(self.clone());
         // Reset signals
         self.stop_signal.store(false, Ordering::SeqCst);
         self.pause_signal.store(false, Ordering::SeqCst);
@@ -172,7 +186,8 @@ impl TypingEngine {
         
         let result = tokio::task::spawn_blocking(move || {
             let mut keyboard = KeyboardSimulator::new()?;
-            let config = engine.config.lock().clone();
+            let mut config = engine.config.lock().clone();
+            if !crate::background::get_background_target().is_null() { config.mistake_rate = 0.0; }
             let mut rng = rand::thread_rng();
             
             let mut i = 0;

@@ -4,14 +4,19 @@ on:
   push:
     branches:
       - master
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   release:
-    # Only building Windows for now - macOS/Linux have issues to be addressed later
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [windows-latest, macos-15, macos-15-intel]
+    runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
 
@@ -32,12 +37,16 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Generate application icons
+        run: node scripts/generate-icons.mjs
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: v__VERSION__
+          releaseCommitish: ${{ github.sha }}
           releaseName: 'ghostkeys v__VERSION__'
-          releaseBody: 'See the assets to download this version and install.'
+          releaseBody: 'Download the Windows installer or the Mac DMG for your processor: aarch64 for Apple Silicon, x64 for Intel. Mac builds are locally signed and require Accessibility (Device Control and Data Access on newer macOS) permission for typing. Background typing supports native editors, Arc, and Helium. Keep the captured browser tab selected while using other apps. Arc may reject emoji; the app stops if an editor does not accept a character.'
           releaseDraft: false
           prerelease: false

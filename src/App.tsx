@@ -1,20 +1,24 @@
+import { useState } from "react";
 import { ContentInput } from "./components/ContentInput";
 import { TextEditor } from "./components/TextEditor";
 import { TypingControls } from "./components/TypingControls";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { StatusBar } from "./components/StatusBar";
 import { CountdownOverlay } from "./components/CountdownOverlay";
+import { MacPermissions } from "./components/MacPermissions";
+import { MacBackgroundTarget } from "./components/MacBackgroundTarget";
 import { useTypingState } from "./hooks/useTypingState";
 import { useConfig } from "./hooks/useConfig";
 import "./styles/globals.css";
 
 function App() {
+  const [capturing, setCapturing] = useState(false);
   const { state, countdown, loadContent, updateContent, start, stop, pause, resume } =
     useTypingState();
   const { config, updateConfig, resetConfig } = useConfig();
 
   const isTypingOrCountdown =
-    state.status === "typing" || state.status === "countdown";
+    capturing || state.status === "typing" || state.status === "countdown" || state.status === "paused";
 
   return (
     <div className="min-h-screen bg-ghost-950 text-ghost-100 p-6">
@@ -28,6 +32,8 @@ function App() {
       </header>
 
       <div className="space-y-6">
+        <MacPermissions />
+        <MacBackgroundTarget disabled={isTypingOrCountdown} onCapturingChange={setCapturing} />
         {/* Content Input (File Drop or Paste) */}
         <section>
           <ContentInput
@@ -68,13 +74,13 @@ function App() {
             onStop={stop}
             onPause={pause}
             onResume={resume}
-            hasFile={!!state.fileName}
+            hasFile={!capturing && !!state.content}
           />
         </section>
 
         {/* Hotkey hint */}
         <div className="text-center text-ghost-500 text-sm">
-          Press <kbd className="px-2 py-1 bg-ghost-800 rounded text-ghost-300 font-mono text-xs">Ctrl+Alt+S</kbd> to start/stop
+          Press <kbd className="px-2 py-1 bg-ghost-800 rounded text-ghost-300 font-mono text-xs">{navigator.userAgent.includes("Mac") ? "Control+Option+S" : "Ctrl+Alt+S"}</kbd> to start/stop
         </div>
 
         {/* Settings */}
