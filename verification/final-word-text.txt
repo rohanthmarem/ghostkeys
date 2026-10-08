@@ -1,0 +1,27 @@
+Roblox Company Research 
+
+Roblox builds a platform for creating, participating in, and hosting video game experiences with the global community. For this application, I want to emphasize engineering work that makes those experiences responsive and gives creators useful tools. The summer 2027 internship offers a twelve-week project with mentorship and responsibility through implementation, testing, deployment, and presentation. That makes my production software work and interactive projects a useful combination to emphasize. [1] 
+
+ 
+
+In my research, I found Andrew Swerdlow's February 2025 article, which explains how Roblox supports engineers with tools for deploying services, reviewing code, and understanding software behavior. It describes automated canary analysis, which checks a limited release before a change reaches more users. This is similar to my work on model evaluations at Phoebe. Both involve finding evidence of problems before proceeding with a change. In the letter, I will connect that approach to my changes to the v3 agent harness at Phoebe and how I rolled out those changes, without implying that I have already built Roblox's release systems. [2] 
+
+ 
+
+I also found a June 2025 article by Anirudh Sudarshan and Anying Li, which describes making Cube 3D generation faster through profiling and avoiding repeated computation. Their broader point is that waiting for systems to load or respond interrupts a creator's ability to experiment. I will use that observation to connect Roblox's priorities to Coach Bob, where movement, visual targets, and spoken feedback form one interaction that often needed to happen in real time or near real time. It also supports my interest in measurable performance improvements. These two engineering articles let me explain why Roblox's work interests me through concrete examples, rather than relying only on its popularity or my enthusiasm for the platform. 
+
+ 
+
+Cover Letter Comparison 
+
+Claude did well at organizing my letter around the same two areas as my original: measurable performance improvements and real-time spatial computing. It connected my Phoebe experience to Roblox's engineering articles and kept the token and rendering results tied to their test conditions. However, the long performance paragraph reads like my résumé bullets joined together, and phrases such as "a mentor to argue with" are too casual for this application. It also incorrectly claims that both spatial projects used Python and C++, and exaggerates the evidence by saying my evaluations made the Phoebe changes safe. I would keep the two-area structure and relevant company research while removing unsupported claims and giving Phoebe and Coach Bob more room to explain why the work matters. This experience showed me that AI can be useful for organizing a first draft, identifying connections between my experience and a job posting, and suggesting clearer wording. It can also help me notice repetition or gaps that I miss when reviewing my own writing. I would not rely on it to describe my accomplishments, since it can still invent details, misrepresent technical work, or write personal reflections that I do not stand behind. Submitting its output without checking it could leave me defending claims in an interview that are inaccurate or not my own, which would undermine my application. For job applications, I see AI as an editing partner and a tool for moving from an initial idea to a first draft, rather than a final version I can submit without review. I should remain responsible for the facts, the voice, and the final decisions so the application represents someone I can confidently present in an interview. 
+
+ 
+
+Online Portfolio Reflection 
+
+I changed my portfolio from a personal notebook centered on school projects into a clearer overview of my engineering work. In the earlier version, which was severely outdated, the homepage introduced me as a high school student and gave longer descriptions of TensorForest and my robotics team. The current homepage uses a shorter Waterloo introduction followed by concise experience bullets reflecting what is seen on my résumé and in my cover letters, including Phoebe, Extrian, Hack the North, and community leadership. This makes my recent work easier to find. 
+
+ 
+
+Visually, I replaced the dotted background and colored navigation highlights with a mostly black-and-white design, larger serif headings, and a cleaner layout. I also added a Sidequests link, giving personal interests a separate place in the navigation. The projects page changed from two large cards to a longer list with dates, categories, short descriptions, and images beside each entry. Coach Bob now appears first, making my AR work more visible to a recruiter, particularly for Roblox. The homepage also includes an Experiences section with direct links to selected work. Together, these changes give visitors more evidence of what I build while keeping my personality present. 
